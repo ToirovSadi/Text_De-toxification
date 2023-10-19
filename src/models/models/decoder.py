@@ -26,7 +26,7 @@ class Decoder(nn.Module):
             embed_dim,
             hidden_dim,
             num_layers=num_layers,
-            dropout=dropout,
+            dropout=dropout if num_layers > 1 else 0,
         )
         self.fc = nn.Linear(hidden_dim, output_dim)
         self.dropout = nn.Dropout(dropout)

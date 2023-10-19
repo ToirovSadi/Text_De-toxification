@@ -24,7 +24,7 @@ class Encoder(nn.Module):
             embed_dim,
             hidden_dim,
             num_layers=num_layers,
-            dropout=dropout,
+            dropout=dropout if num_layers > 1 else 0,
         )
         self.dropout = nn.Dropout(dropout)
         

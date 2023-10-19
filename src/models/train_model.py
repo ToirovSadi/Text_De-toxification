@@ -14,8 +14,6 @@ def train_epoch(model, train_dataloader, optimizer, criterion, epoch=None, clip=
     train_loss = 0
     for i, batch in loop:
         similarity, len_diff, toxic_sent, neutral_sent, toxic_val, neutral_val = batch
-        toxic_sent = toxic_sent.to(device)
-        neutral_sent = neutral_sent.to(device)
         
         optimizer.zero_grad()
         
@@ -55,8 +53,6 @@ def eval_epoch(model, eval_dataloader, criterion, epoch=None, device='cpu'):
     with torch.no_grad():
         for i, batch in loop:
             similarity, len_diff, toxic_sent, neutral_sent, toxic_val, neutral_val = batch
-            toxic_sent = toxic_sent.to(device)
-            neutral_sent = neutral_sent.to(device)
 
             preds = model(toxic_sent, neutral_sent, 0) # turn off the teacher force
             # toxic_sent.shape: [num_steps, batch_size]
@@ -68,7 +64,7 @@ def eval_epoch(model, eval_dataloader, criterion, epoch=None, device='cpu'):
             #     - neutral.shape: [num_steps * batch_size]
             #     - preds.shape: [num_steps * batch_size, output_dim]
             output_dim = preds.shape[2]
-            loss = criterion(preds[1:].view(-1, output_dim), neutral_sent[:1].view(-1))
+            loss = criterion(preds[1:].view(-1, output_dim), neutral_sent[1:].view(-1))
 
             eval_loss += loss.item()
             loop.set_postfix(**{"loss": eval_loss / (i + 1)})
@@ -160,7 +156,7 @@ def train(
         
         if val_loss < best_loss:
             best_loss = val_loss
-            torch.save(model.state_dict(), ckpt_path)
+            torch.save(model, ckpt_path)
     
     if return_model:
         return best_loss, model
