@@ -32,7 +32,7 @@ class Decoder(nn.Module):
         self.dropout = nn.Dropout(dropout)
         
         
-    def forward(self, x, hidden):
+    def forward(self, x, hidden, context):
         # x.shape: [batch_size]
         x.unsqueeze_(0) # -> x.shape: [1, batch_size]
         
