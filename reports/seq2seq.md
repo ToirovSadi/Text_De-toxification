@@ -18,7 +18,7 @@ Image above taken from [here](https://raw.githubusercontent.com/bentrevett/pytor
 
 ## Results
 - Notebooks that illustrates this architecture and results can be found [here](../notebooks/seq2seq.ipynb).
-- Model was trained for 20 epochs.
+- Model was trained for 15 epochs.
 - Trained model can be found [here](../models/seq2seq.pt).
 
 **Good Predictions** <br>

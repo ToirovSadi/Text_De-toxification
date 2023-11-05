@@ -12,22 +12,25 @@ def train_epoch(model, train_dataloader, optimizer, criterion, epoch=None, clip=
     
     model.train()
     train_loss = 0
-    for i, batch in loop:
-        similarity, len_diff, toxic_sent, neutral_sent, toxic_val, neutral_val = batch
+    for i, (toxic_sent, neutral_sent) in loop:
+        toxic_sent, neutral_sent = toxic_sent.to(device), neutral_sent.to(device)
         
         optimizer.zero_grad()
-        
-        preds = model(toxic_sent, neutral_sent, teacher_force)
-        # toxic_sent.shape: [num_steps, batch_size]
-        # neutral_sent.shape: [num_steps, batch_size]
-        # preds.shape: [num_steps, batch_size, output_dim]
-        
-        
+
+        # make the prediction
+        preds = model(
+            toxic_sent,
+            neutral_sent,
+            teacher_force
+        )
         # flatten all data:  to calc the loss
         #     - neutral.shape: [num_steps * batch_size]
         #     - preds.shape: [num_steps * batch_size, output_dim]
-        output_dim = preds.shape[2]
-        loss = criterion(preds[1:].view(-1, output_dim), neutral_sent[1:].view(-1))
+        output_dim = preds.shape[-1]
+        loss = criterion(
+            preds.view(-1, output_dim),
+            neutral_sent[:, 1:].reshape(-1),
+        )
         
         loss.backward()
         if clip:
@@ -51,20 +54,30 @@ def eval_epoch(model, eval_dataloader, criterion, epoch=None, device='cpu'):
     model.eval()
     eval_loss = 0
     with torch.no_grad():
-        for i, batch in loop:
-            similarity, len_diff, toxic_sent, neutral_sent, toxic_val, neutral_val = batch
-
-            preds = model(toxic_sent, neutral_sent, 0) # turn off the teacher force
-            # toxic_sent.shape: [num_steps, batch_size]
-            # neutral_sent.shape: [num_steps, batch_size]
-            # preds.shape: [num_steps, batch_size, output_dim]
-
+        for i, (toxic_sent, neutral_sent) in loop:
+            toxic_sent, neutral_sent = toxic_sent.to(device), neutral_sent.to(device)
+            
+            preds = model(
+                toxic_sent,
+                neutral_sent,
+                0, # turn off the teacher force
+            )
+            # toxic_sent.shape: [batch_size, num_steps]
+            # neutral_sent.shape: [batch_size, num_steps]
+            # preds.shape: [batch_size, num_steps, output_dim]
+            
+            # flatten all data:  to calc the loss
+            #     - neutral.shape: [num_steps * batch_size]
+            #     - preds.shape: [num_steps * batch_size, output_dim]
 
             # flatten all data:  to calc the loss
             #     - neutral.shape: [num_steps * batch_size]
             #     - preds.shape: [num_steps * batch_size, output_dim]
-            output_dim = preds.shape[2]
-            loss = criterion(preds[1:].view(-1, output_dim), neutral_sent[1:].view(-1))
+            output_dim = preds.shape[-1]
+            loss = criterion(
+                preds.view(-1, output_dim),
+                neutral_sent[:, 1:].reshape(-1),
+            )
 
             eval_loss += loss.item()
             loop.set_postfix(**{"loss": eval_loss / (i + 1)})
@@ -124,11 +137,11 @@ def train(
     epochs=10,
     device=None,
     clip_grad=None,
-    teacher_force=0.5,
+    teacher_force=None,
     ckpt_path='best.pt',
     best_loss=float('inf'),
     cur_epoch=1,
-    return_model=False
+    return_model=False,
 ):
     if type(model) is str:
         # load the model
@@ -146,9 +159,19 @@ def train(
     if device is None:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         print("device not specified using", device)
+    if teacher_force is None:
+        # default values for teacher force
+        teacher_force = {
+            'value': None,
+            'gamma': 1,
+            'update_every_n_epoch': 1,
+        }
     
+    
+        
+    epoch_cnt = 0
     for epoch in range(cur_epoch, epochs + cur_epoch):
-        train_loss = train_epoch(model, loaders[0], optimizer, criterion, epoch, clip_grad, device, teacher_force)
+        train_loss = train_epoch(model, loaders[0], optimizer, criterion, epoch, clip_grad, device, teacher_force['value'])
         if len(loaders) > 1:
             val_loss = eval_epoch(model, loaders[1], criterion, epoch, device)
         else:
@@ -157,6 +180,18 @@ def train(
         if val_loss < best_loss:
             best_loss = val_loss
             torch.save(model, ckpt_path)
+        
+        # update the teacher force
+        epoch_cnt += 1
+        if teacher_force['value'] is not None:
+            if epoch_cnt % teacher_force['update_every_n_epoch'] == 0 and teacher_force['value'] != 0:
+                teacher_force['value'] *= teacher_force['gamma']
+                if teacher_force['value'] < 1:
+                    print("Update teacher force to", teacher_force['value'])
+
+            if teacher_force['value'] < 1e-3 and teacher_force['value'] != 0:
+                print("Teacher force turned off")
+                teacher_force['value'] = 0
     
     if return_model:
         return best_loss, model

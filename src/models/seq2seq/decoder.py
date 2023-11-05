@@ -8,6 +8,7 @@ class Decoder(nn.Module):
         hidden_dim,
         num_layers=1,
         dropout=0,
+        vocab=None,
         padding_idx=None,
     ):
         super(Decoder, self).__init__()
@@ -15,6 +16,7 @@ class Decoder(nn.Module):
         self.output_dim = output_dim
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
+        self.vocab = vocab
         
         self.embedding = nn.Embedding(
             num_embeddings=output_dim,
@@ -27,23 +29,30 @@ class Decoder(nn.Module):
             hidden_dim,
             num_layers=num_layers,
             dropout=dropout if num_layers > 1 else 0,
+            batch_first=True
         )
-        self.fc = nn.Linear(hidden_dim, output_dim)
+        self.fc_out = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim * 4),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            
+            nn.Linear(hidden_dim * 4, output_dim),
+        )
+        
         self.dropout = nn.Dropout(dropout)
         
         
     def forward(self, x, hidden, context):
         # x.shape: [batch_size]
-        x.unsqueeze_(0) # -> x.shape: [1, batch_size]
+        x = x.unsqueeze(1) # -> x.shape: [batch_size, 1]
         
         emb = self.dropout(self.embedding(x))
-        # emb.shape: [1, batch_size, embed_dim]
-        
+        # emb.shape: [batch_size, 1, embed_dim]
         output, hidden = self.rnn(emb, hidden)
-        # outputs.shape: [1, batch_size, num_hidden]
-        # hidden.shape: [num_layers, batch_size, num_hidden]
+        # outputs.shape: [batch_size, 1, hidden_dim]
+        # hidden.shape: [num_layers, batch_size, hidden_dim]
         
-        prediction = self.fc(output.squeeze(0))
+        prediction = self.fc_out(output.squeeze(1))
         # prediction.shape: [batch_size, output_dim]
         
         return prediction, hidden

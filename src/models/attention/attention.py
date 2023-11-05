@@ -19,15 +19,13 @@ class Attention(nn.Module):
         
     def forward(self, hidden, enc_outputs):
         # hidden.shape: [batch_size, dec_hidden_dim]
-        # enc_outputs.shape: [num_steps, batch_size, enc_hidden_dim * 2]
+        # enc_outputs.shape: [batch_size, num_steps, enc_hidden_dim * 2]
         
-        num_steps, batch_size = enc_outputs.shape[:2]
+        batch_size, num_steps = enc_outputs.shape[:2]
         
         hidden = hidden.unsqueeze(1).repeat(1, num_steps, 1)
         # hidden.shape: [batch_size, num_steps, dec_hidden_dim]
         check_shape(hidden, (batch_size, num_steps, self.dec_hidden_dim), 'hidden')
-        
-        enc_outputs = enc_outputs.permute(1, 0, 2)
         
         energy = torch.tanh(self.attn(torch.cat((hidden, enc_outputs), dim=2)))
         # energy.shape: [batch_size, num_steps, dec_hidden_dim]
