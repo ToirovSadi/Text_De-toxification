@@ -36,6 +36,7 @@ def postprocess_text(text: list[str], detokenize=True) -> str:
 def calculate_bleu(dataset, model, **args):
     preds = []
     trgs = []
+    model.eval()
     with torch.no_grad():
         for i in tqdm(range(len(dataset))):
             toxic_sent, neutral_sent = dataset[i]

@@ -22,7 +22,7 @@ class Encoder(nn.Module):
             embedding_dim=embed_dim,
             padding_idx=padding_idx
         )
-        self.rnn = nn.GRU(
+        self.rnn = nn.LSTM(
             embed_dim,
             hidden_dim,
             num_layers=num_layers,
@@ -39,6 +39,6 @@ class Encoder(nn.Module):
         # embs.shape: (batch_size, num_steps, embed_dim)
         outputs, state = self.rnn(embs)
         # outputs.shape: (batch_size, num_steps, hidden_dim)
-        # state.shape: (num_layers, num_steps, hidden_dim)
+        # state[0].shape: (num_layers, num_steps, hidden_dim)
         
         return outputs, state

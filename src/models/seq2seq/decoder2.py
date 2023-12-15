@@ -25,20 +25,14 @@ class Decoder2(nn.Module):
             padding_idx=padding_idx,
         )
         
-        self.rnn = nn.GRU(
+        self.rnn = nn.LSTM(
             embed_dim + hidden_dim,
             hidden_dim,
             num_layers=num_layers,
             dropout=dropout if num_layers > 1 else 0,
             batch_first=True,
         )
-        self.fc_out = nn.Sequential(
-            nn.Linear(embed_dim + hidden_dim * 2, hidden_dim * 4),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            
-            nn.Linear(hidden_dim * 4, output_dim),
-        ) 
+        self.fc_out = nn.Linear(embed_dim + hidden_dim * 2, output_dim)
         self.dropout = nn.Dropout(dropout)
         self.vocab = vocab
         
@@ -52,14 +46,14 @@ class Decoder2(nn.Module):
         
         emb = torch.cat((emb, context), dim=2)
         # emd.shape: [batch_size, 1, hidden_dim + embed_dim]
-        outputs, hidden = self.rnn(emb, hidden)
+        outputs, state = self.rnn(emb, hidden)
         # outputs.shape: [batch_size, 1, hidden_dim]
-        # hidden.shape: [n_layers, batch_size, hidden_dim]
+        # state[0].shape: [n_layers, batch_size, hidden_dim]
         
         output = torch.cat((emb, outputs), dim=2)
         # output.shape: [batch_size, 1, 2 * hidden_dim + embed_dim]
         output = self.fc_out(output.squeeze(1))
         # output.shape: [batch_size, output_dim]
         
-        return output, hidden
+        return output, state
         

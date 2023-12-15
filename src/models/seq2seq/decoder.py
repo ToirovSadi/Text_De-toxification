@@ -24,20 +24,14 @@ class Decoder(nn.Module):
             padding_idx=padding_idx,
         )
         
-        self.rnn = nn.GRU(
+        self.rnn = nn.LSTM(
             embed_dim,
             hidden_dim,
             num_layers=num_layers,
             dropout=dropout if num_layers > 1 else 0,
             batch_first=True
         )
-        self.fc_out = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim * 4),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            
-            nn.Linear(hidden_dim * 4, output_dim),
-        )
+        self.fc_out = nn.Linear(hidden_dim, output_dim)
         
         self.dropout = nn.Dropout(dropout)
         
@@ -48,11 +42,11 @@ class Decoder(nn.Module):
         
         emb = self.dropout(self.embedding(x))
         # emb.shape: [batch_size, 1, embed_dim]
-        output, hidden = self.rnn(emb, hidden)
+        output, state  = self.rnn(emb, hidden)
         # outputs.shape: [batch_size, 1, hidden_dim]
-        # hidden.shape: [num_layers, batch_size, hidden_dim]
+        # state.shape: [num_layers, batch_size, hidden_dim]
         
         prediction = self.fc_out(output.squeeze(1))
         # prediction.shape: [batch_size, output_dim]
         
-        return prediction, hidden
+        return prediction, state

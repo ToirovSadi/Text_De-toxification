@@ -29,7 +29,7 @@ class Decoder(nn.Module):
             padding_idx=padding_idx,
         )
         
-        self.rnn = nn.GRU(
+        self.rnn = nn.LSTM(
             embed_dim + 2 * enc_hidden_dim,
             hidden_dim,
             batch_first=True,
@@ -37,25 +37,14 @@ class Decoder(nn.Module):
         self.attention = attention
         self.dropout = nn.Dropout(dropout)
         
-        self.fc_out = nn.Sequential(
-            nn.Linear(enc_hidden_dim * 2 + hidden_dim + embed_dim, hidden_dim * 8),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            
-            nn.Linear(hidden_dim * 8, hidden_dim * 16),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            
-            nn.Linear(hidden_dim * 16, output_dim),
-        ) 
+        self.fc_out = nn.Linear(enc_hidden_dim * 2 + hidden_dim + embed_dim, output_dim)
         
-    def forward(self, x, hidden, enc_output):
+    def forward(self, x, state, enc_output):
         # x.shape: [batch_size]
         # hidden: [batch_size, dec_hidden_dim]
         # enc_output: [batch_size, num_steps, enc_hidden_dim * 2]
         batch_size = x.shape[0]
         num_steps = enc_output.shape[1]
-        check_shape(hidden, (batch_size, self.hidden_dim), 'hidden')
         check_shape(enc_output, (batch_size, num_steps, self.enc_hidden_dim * 2), 'enc_output')
         
         x = x.unsqueeze(1) # -> x.shape: [batch_size, 1]
@@ -65,7 +54,7 @@ class Decoder(nn.Module):
         # emb.shape: [batch_size, 1, embed_dim]
         check_shape(emb, (batch_size, 1, self.embed_dim), 'emb')
         
-        attn_weights = self.attention(hidden, enc_output).unsqueeze(1)
+        attn_weights = self.attention(state[0].squeeze(0), enc_output).unsqueeze(1)
         # attn_weights.shape: [batch_size, 1, num_steps]
         check_shape(attn_weights, (batch_size, 1, num_steps), 'attn_weights')
         
@@ -76,11 +65,9 @@ class Decoder(nn.Module):
         attn = attn.unsqueeze(1)
         # attn.shape: [batch_size, 1, enc_hidden_dim * 2]
         
-        output, hidden = self.rnn(torch.cat((attn, emb), dim=2), hidden.unsqueeze(0))
+        output, state = self.rnn(torch.cat((attn, emb), dim=2), state)
         # output.shape: [batch_size, 1, dec_hidden_dim]
-        # hidden.shape: [num_layers, batch_size, dec_hidden_dim]
         check_shape(output, (batch_size, 1, self.hidden_dim), 'output')
-        check_shape(hidden, (1, batch_size, self.hidden_dim), 'hidden')
         
         # fc_out: takes attn, outputs, emb
         # attn.shape: [batch_size, 1, enc_hidden_dim * 2]
@@ -94,4 +81,4 @@ class Decoder(nn.Module):
         # prediction.shape: [batch_size, output_dim]
         check_shape(prediction, (batch_size, self.output_dim), 'prediction')
         
-        return prediction, hidden.squeeze(0)
+        return prediction, state

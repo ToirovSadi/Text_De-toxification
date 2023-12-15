@@ -32,7 +32,7 @@ class Seq2Seq(nn.Module):
         
         # pass the src through the encoder
         _, hidden = self.encoder(src)
-        context = hidden.swapaxes(0, 1).clone()
+        context = hidden[0].swapaxes(0, 1).clone()
         
         for t in range(1, self.max_sent_size):
             pred, hidden = self.decoder(input_dec, hidden, context)

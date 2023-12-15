@@ -6,6 +6,8 @@ from nltk import sent_tokenize
 from nltk.tokenize.treebank import TreebankWordDetokenizer
 nltk.download('punkt', quiet=True)
 
+from queue import PriorityQueue
+
 def check_shape(x, exp_shape, name=''):
     assert x.shape == exp_shape, f"incorrect {name} shape expected: {exp_shape}, but got {x.shape}"
 

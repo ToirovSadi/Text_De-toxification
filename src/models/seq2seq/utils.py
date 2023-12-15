@@ -6,6 +6,8 @@ from nltk import sent_tokenize
 from nltk.tokenize.treebank import TreebankWordDetokenizer
 nltk.download('punkt', quiet=True)
 
+from queue import PriorityQueue
+
 from src.data.preprocessing import preprocess_text as prep
 
 # preprocess the raw text to pass to the model
@@ -49,7 +51,7 @@ def greedy_search(model, src):
         encoder_out, hidden = model.encoder(src)
 
     eos_idx = vocab['<eos>']
-    context = hidden.swapaxes(0, 1).clone()
+    context = hidden[0].swapaxes(0, 1).clone()
     dec_in = torch.empty(batch_size, device=model.device, dtype=torch.long).fill_(vocab['<sos>'])
     with torch.no_grad():
         for i in range(max_sent_size):
@@ -98,7 +100,7 @@ def beam_search(model, src, beam_width=5, num_candidates=3, max_steps=2000, max_
     # first steps
     with torch.no_grad():
         encoder_out, hidden = model.encoder(src)
-    context = hidden.swapaxes(0, 1).clone()
+    context = hidden[0].swapaxes(0, 1).clone()
     dec_in = torch.LongTensor([sos_idx]).to(model.device)
     node = BeamNode(hidden, dec_in, log_prob=0, length=1)
     q.put((-node.eval(), node))
