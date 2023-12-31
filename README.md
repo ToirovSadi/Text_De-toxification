@@ -1,7 +1,8 @@
-# Text De-toxification
-## Name Surname: Sadi Toirov, group B21-AI-01
+# [Text De-toxification](https://text-de-toxification.streamlit.app)
 
-This project helps you to avoid toxic sentences. It will try to convert them to neutral.
+This project helps you avoid toxic sentences. It will try to convert them to neutral. The app is deployed at Streamlit [link](https://text-de-toxification.streamlit.app) to demo.
+
+It's more of an educational project, so you can look at implementations of models from scratch, except t5-small, which is taken from hugging-face and fine-tuned to de-toxify the text.
 
 # How to use
 ## How to install
@@ -14,16 +15,12 @@ pip install -r requirements.txt
 
 Install all requirements for the model, to avoid any errors. It's recommented to create a new python env before installing all those packages.
 
-
-## How to predict
+## Run Streamlit Locally
 ```bash
-python src/models/predict_model.py --model_name='transformer'
+streamlit run app.py
 ```
-or 
-```bash
-python src/models/predict_model.py
-```
-and then through console type the name of the model
+Then the app will open in a browser, and there you can test the app.
+It will download the models that you don't have locally and store them in `models/`.
 
 ### List of available models:
 - seq2seq
@@ -32,3 +29,4 @@ and then through console type the name of the model
 - attention2
 - transformer
 - transformer2
+- t5-small
