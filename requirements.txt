@@ -9,3 +9,10 @@ nltk==3.6.2
 torchvision==0.14.0
 torchaudio==0.13.0
 gdown==4.7.1
+transformers==4.36.2
+datasets==2.16.0
+tokenizers==0.15.0
+accelerate==0.25.0
+huggingface_hub==0.20.1
+evaluate==0.4.1
+rouge_score==0.1.2
