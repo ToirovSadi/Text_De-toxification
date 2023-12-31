@@ -27,7 +27,7 @@ def load_model(model_name):
         file_name = os.path.join('models',  info['file_name'])
         
         if not os.path.exists(file_name):
-            gdown.download(link, file_name, quiet=False, fuse=True)
+            gdown.download(link, file_name, quiet=False, fuzzy=True)
         
         model = torch.load(file_name, map_location='cpu')
         
@@ -115,7 +115,11 @@ text = st.text_area('Input text', 'You are welcome to try different models.')
 
 # model will fix the text ...
 model = load_model(model_name)
-fixed_text = generate(model, text, num_beams=num_beams, model_name=model_name)
+try:
+    fixed_text = generate(model, text, num_beams=num_beams, model_name=model_name)
+except Exception as e:
+    st.error(e)
+    fixed_text = 'Sorry, something went wrong.'
 
 if type(fixed_text) is list:
     fixed_text = fixed_text[0]
