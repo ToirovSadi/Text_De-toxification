@@ -9,7 +9,7 @@ import os
 st.title('Text De-toxification')
 st.subheader('This is a demo for text de-toxification.\nSelect a model and input a sentence to test it.')
 
-@st.cache_data(ttl=24*3600, max_entries=7)
+@st.cache_data(ttl=24*3600, max_entries=1)
 def load_model(model_name):
     if model_name == 't5-small (max_len=128)':
         from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
