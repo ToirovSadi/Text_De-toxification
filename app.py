@@ -9,6 +9,7 @@ import os
 st.title('Text De-toxification')
 st.subheader('This is a demo for text de-toxification.\nSelect a model and input a sentence to test it.')
 
+@st.cache_data(ttl=24*3600, max_entries=7)
 def load_model(model_name):
     if model_name == 't5-small (max_len=128)':
         from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
@@ -69,46 +70,52 @@ models = [
 model_name = st.sidebar.selectbox('Select model', models)
 num_beams = st.sidebar.slider('num_beams', 1, 10, 3)
 
-with open("info.json", "r") as f:
-    info = json.load(f)[model_name]
 
-def get_info(model_name, p):
+@st.cache_data(ttl=24*3600, max_entries=1)
+def load_info():
+    with open("info.json", "r") as f:
+        info = json.load(f)
+    return info
+
+info = load_info()[model_name]
+
+def get_info(model_name):
     if model_name == 't5-small (max_len=128)':
         return f"""
         #### Model Parameters:
-        - max_len: {p['max_len']}
-        - batch_size: {p['batch_size']}
-        - num_epochs: {p['num_epochs']}
-        - learning_rate: {p['learning_rate']}
-        - bleu_score: {p['bleu_score']}
+        - max_len: {info['max_len']}
+        - batch_size: {info['batch_size']}
+        - num_epochs: {info['num_epochs']}
+        - learning_rate: {info['learning_rate']}
+        - bleu_score: {info['bleu_score']}
         
-        #### Finetunned from: [t5-small]({p['source_code']})
-        #### Training: [JupiterNotebook]({p['training']})
-        #### Model: [GoogleDrive]({p['model_link']})
-        #### Dataset: [HuggingFace]({p['dataset_link']})
+        #### Finetunned from: [t5-small]({info['source_code']})
+        #### Training: [JupiterNotebook]({info['training']})
+        #### Model: [GoogleDrive]({info['model_link']})
+        #### Dataset: [HuggingFace]({info['dataset_link']})
         """
     else:
         return f"""
         #### Model Parameters:
-        - max_len: {p['max_len']}
-        - vocab_size: {p['vocab_size']}
-        - batch_size: {p['batch_size']}
-        - num_epochs: {p['num_epochs']}
-        - num_layers: {p['num_layers']}
-        - hidden_size: {p['hidden_size']}
-        - dropout: {p['dropout']}
-        - learning_rate: {p['learning_rate']}
-        - bleu_score: {p['bleu_score']}
+        - max_len: {info['max_len']}
+        - vocab_size: {info['vocab_size']}
+        - batch_size: {info['batch_size']}
+        - num_epochs: {info['num_epochs']}
+        - num_layers: {info['num_layers']}
+        - hidden_size: {info['hidden_size']}
+        - dropout: {info['dropout']}
+        - learning_rate: {info['learning_rate']}
+        - bleu_score: {info['bleu_score']}
         
-        #### Source Code: [Github]({p['source_code']})
-        #### Training: [JupiterNotebook]({p['training']})
-        #### Model: [GoogleDrive]({p['model_link']})
-        #### Dataset: [HuggingFace]({p['dataset_link']})
+        #### Source Code: [Github]({info['source_code']})
+        #### Training: [JupiterNotebook]({info['training']})
+        #### Model: [GoogleDrive]({info['model_link']})
+        #### Dataset: [HuggingFace]({info['dataset_link']})
         """
     
 
 with st.sidebar.subheader('About the Model'):
-    st.sidebar.write(get_info(model_name, info))
+    st.sidebar.write(get_info(model_name))
 
 # text to receive text from user
 text = st.text_area('Input text', 'You are welcome to try different models.')
